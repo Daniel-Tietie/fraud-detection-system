@@ -1,0 +1,12 @@
+flowchart TD
+    C[Client] -->|POST /transactions<br>POST /login-attempts| ALB[Application Load Balancer]
+    ALB --> API[ECS Fargate<br>FastAPI]
+    API <-->|history| H[(DynamoDB<br>Transactions + LoginAttempts)]
+    API -->|flagged only| Q[SQS queue]
+    Q --> L[Lambda<br>FraudProcessor]
+    Q -.->|after 3 failed tries| D[SQS dead-letter queue]
+    L --> F[(DynamoDB<br>FlaggedTransactions)]
+    L --> S[SNS topic]
+    S -->|email| U[Customer email]
+    Q -.->|message count| A[CloudWatch alarm]
+    A --> S
